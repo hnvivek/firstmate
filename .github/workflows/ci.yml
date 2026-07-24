@@ -322,7 +322,20 @@ jobs:
           esac
           /bin/bash --version | head -1
           command -v jq >/dev/null || { echo "::error::jq is required"; exit 1; }
-          /bin/bash -n bin/fm-fleet-snapshot.sh
+          # Every tracked firstmate shell script must parse under stock macOS
+          # Bash 3.2 - this is the runtime /bin/bash firstmate crews inherit on
+          # macOS, so a bash-3.2-only syntax regression (e.g. issue #958) must
+          # fail here before merge. shopt nullglob keeps the loop a no-op if a
+          # dir is empty rather than literal-expanding the glob.
+          shopt -s nullglob
+          fail=0
+          for f in bin/*.sh bin/backends/*.sh; do
+            if ! /bin/bash -n "$f"; then
+              echo "::error::$f fails /bin/bash -n (bash 3.2 parse regression)"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || exit 1
 
           snapshot_output=$(/bin/bash tests/fm-fleet-snapshot-view.test.sh)
           printf '%s\n' "$snapshot_output"
