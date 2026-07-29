@@ -2,6 +2,7 @@
 
 The watcher remains intentionally one-shot: one actionable reason closes one watcher cycle.
 Must-work continuity now lives above that process boundary instead of depending on the model remembering a re-arm step.
+A turn-independent launchd backstop ([watcher-watchdog.md](watcher-watchdog.md)) covers the gap where a watcher dies silently during an idle gap with no Stop hook to re-arm it.
 
 ## Ownership
 

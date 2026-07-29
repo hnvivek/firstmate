@@ -312,6 +312,10 @@
       "audience": "operator-current"
     },
     {
+      "path": "docs/watcher-watchdog.md",
+      "audience": "operator-current"
+    },
+    {
       "path": "docs/wedge-alarm.md",
       "audience": "operator-current"
     },
