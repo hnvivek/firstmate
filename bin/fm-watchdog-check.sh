@@ -64,6 +64,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
+CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 GRACE=${FM_GUARD_GRACE:-300}
 BEAT="$STATE/.last-watcher-beat"
 OWNER_LOCK="$STATE/.claude-autoarm.lock"
@@ -112,6 +113,12 @@ beacon_age=$(fm_path_age "$BEAT")
 # recovery is already under way; step aside rather than double-arm.
 fm_lock_try_acquire "$OWNER_LOCK" || exit 0
 trap 'fm_lock_release "$OWNER_LOCK"' EXIT
+
+# X mode cadence: source the generated config so an X instance polls at its
+# 30s cadence (fm-bootstrap.sh x_mode_setup contract), matching the Stop
+# auto-arm. Without it the forked watcher would run at the 300s default.
+# shellcheck source=/dev/null
+[ -f "$CONFIG/x-mode.env" ] && . "$CONFIG/x-mode.env"
 
 # --- foreground the real arm wrapper (NEVER shell &) --------------------------
 # Blocks for the arm cycle, which is exactly what keeps a watcher (and its fresh
