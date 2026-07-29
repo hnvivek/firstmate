@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd per-user agent template for the firstmate watcher watchdog.
+
+  This is a TEMPLATE, not a loadable plist: bin/fm-watchdog-install.sh stamps the
+  @@LABEL@@, @@CHECKER@@, and @@FM_HOME@@ placeholders with this home's real
+  absolute paths and a per-home unique label, then loads the result from
+  ~/Library/LaunchAgents. One stamped copy per firstmate home keeps several homes
+  under one user from colliding. See docs/watcher-watchdog.md.
+
+  RunAtLoad arms once at login/reboot so a home with in-flight work is never left
+  blind across a restart; StartInterval re-checks the beacon on a short timer so a
+  watcher that dies silently mid-gap is restored within the grace window,
+  independent of any harness turn cadence.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>@@LABEL@@</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>@@CHECKER@@</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>FM_HOME</key>
+    <string>@@FM_HOME@@</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>90</integer>
+  <key>StandardOutPath</key>
+  <string>@@FM_HOME@@/state/watchdog.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>@@FM_HOME@@/state/watchdog.err.log</string>
+</dict>
+</plist>
