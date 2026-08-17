@@ -112,6 +112,10 @@ beacon_age=$(fm_path_age "$BEAT")
 # A live holder (the Stop hook or a prior checker tick foregrounding an arm) means
 # recovery is already under way; step aside rather than double-arm.
 fm_lock_try_acquire "$OWNER_LOCK" || exit 0
+if ! fm_lock_set_role "$OWNER_LOCK" autoarm; then
+  fm_lock_release "$OWNER_LOCK"
+  exit 0
+fi
 trap 'fm_lock_release "$OWNER_LOCK"' EXIT
 
 # X mode cadence: source the generated config so an X instance polls at its
