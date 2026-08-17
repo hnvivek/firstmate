@@ -3,9 +3,9 @@
   launchd per-user agent template for the firstmate watcher watchdog.
 
   This is a TEMPLATE, not a loadable plist: bin/fm-watchdog-install.sh stamps the
-  @@LABEL@@, @@CHECKER@@, and @@FM_HOME@@ placeholders with this home's real
-  absolute paths and a per-home unique label, then loads the result from
-  ~/Library/LaunchAgents. One stamped copy per firstmate home keeps several homes
+  @@LABEL@@, @@CHECKER@@, @@FM_HOME@@, and @@PATH@@ placeholders with this home's
+  real absolute paths, the installing user's PATH, and a per-home unique label,
+  then loads the result from ~/Library/LaunchAgents. One stamped copy per firstmate home keeps several homes
   under one user from colliding. See docs/watcher-watchdog.md.
 
   RunAtLoad arms once at login/reboot so a home with in-flight work is never left
@@ -27,6 +27,8 @@
   <dict>
     <key>FM_HOME</key>
     <string>@@FM_HOME@@</string>
+    <key>PATH</key>
+    <string>@@PATH@@</string>
   </dict>
   <key>RunAtLoad</key>
   <true/>
