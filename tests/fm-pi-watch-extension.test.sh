@@ -427,7 +427,12 @@ if [ "$count" -eq 1 ]; then
   exit 0
 fi
 trap 'exit 0' TERM INT
-while :; do sleep 0.02; done
+# Park as exec'd sleep, not `while :; do sleep 0.02; done`: the loop parks in
+# the shell, which runs the TERM trap only after the current sleep returns, so
+# a 20ms poll granularity can outlast the test's
+# FM_WATCH_ARM_RETIRE_TIMEOUT_MS=20 and make retireArm time out on a loaded
+# runner. exec'd sleep IS the process, so SIGTERM ends it immediately.
+exec sleep 365
 SH
   chmod +x "$repo/bin/fm-watch-arm.sh"
   out=$(PLUGIN="$plugin" FM_HOME="$home" FM_ROOT_OVERRIDE="$repo" FM_ARM_LOG="$log" FM_PI_ARM_READY_TIMEOUT_MS=250 FM_WATCH_REARM_RETRY_BASE_MS=5 FM_WATCH_REARM_RETRY_MAX_MS=10 FM_WATCH_REARM_RETRY_LIMIT=2 node --input-type=module 2>&1 <<'EOF'
@@ -1602,7 +1607,9 @@ if [ "$count" -eq 1 ]; then
   exit 0
 fi
 trap 'exit 0' TERM INT
-while :; do sleep 0.02; done
+# Same exec'd-sleep park as the Pi twin above: the arm process itself is the
+# signal target, so retire never waits out a shell-level sleep loop.
+exec sleep 365
 SH
   chmod +x "$repo/bin/fm-watch-arm.sh"
   out=$(PLUGIN="$plugin" WORKTREE="$repo" FM_HOME="$home" FM_ARM_LOG="$log" FM_OPENCODE_ARM_READY_TIMEOUT_MS=250 FM_WATCH_REARM_RETRY_BASE_MS=5 FM_WATCH_REARM_RETRY_MAX_MS=10 FM_WATCH_REARM_RETRY_LIMIT=2 node 2>&1 <<'EOF'
