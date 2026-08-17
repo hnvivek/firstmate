@@ -8,8 +8,8 @@ It is opt-in and macOS-only; nothing changes until the home installs the agent.
 ## Mechanism and ownership
 
 `bin/fm-watchdog-check.sh` is the checker.
-`launchd/com.firstmate.watcher-watchdog.plist` is a per-user LaunchAgent template that runs it with `RunAtLoad=true` and `StartInterval=90`, `FM_HOME` set to the target home.
-`bin/fm-watchdog-install.sh` stamps the template's `@@LABEL@@`, `@@CHECKER@@`, and `@@FM_HOME@@` placeholders with real absolute paths and a per-home unique label, then loads it from `~/Library/LaunchAgents`.
+`launchd/com.firstmate.watcher-watchdog.plist` is a per-user LaunchAgent template that runs it with `RunAtLoad=true` and `StartInterval=90`, `FM_HOME` set to the target home, and `PATH` set to the installing user's PATH - launchd's own PATH is the minimal `/usr/bin:/bin:/usr/sbin:/sbin`, where a Homebrew `jq`/`git` is invisible, and the checker's scope gate and the armed watcher's X-mode poll both need them.
+`bin/fm-watchdog-install.sh` stamps the template's `@@LABEL@@`, `@@CHECKER@@`, `@@FM_HOME@@`, and `@@PATH@@` placeholders with real absolute paths, the installing user's PATH, and a per-home unique label, then loads it from `~/Library/LaunchAgents`.
 
 The checker applies the same gates the Stop auto-arm uses, so it never arms an idle, away, or unowned home, and it never double-arms:
 

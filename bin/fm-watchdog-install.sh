@@ -11,11 +11,16 @@
 #   FM_HOME=<home> bin/fm-watchdog-install.sh uninstall
 #   FM_HOME=<home> bin/fm-watchdog-install.sh status
 #
-# FM_HOME defaults to this repo root. The stamped agent carries FM_HOME and a
-# label derived from that path, so several firstmate homes under one macOS user
-# do not collide. install is idempotent (it reloads the current plist). It fails
-# loud (nonzero) when launchctl is unavailable - i.e. on non-macOS - rather than
-# silently misinstall a LaunchAgent that can never run.
+# FM_HOME defaults to this repo root. The stamped agent carries FM_HOME, the
+# installing user's PATH, and a label derived from that path, so several
+# firstmate homes under one macOS user do not collide. install is idempotent
+# (it reloads the current plist). It fails loud (nonzero) when launchctl is
+# unavailable - i.e. on non-macOS - rather than silently misinstall a
+# LaunchAgent that can never run.
+#
+# launchd starts agents on a minimal PATH (/usr/bin:/bin:/usr/sbin:/sbin), where
+# a Homebrew jq/git is invisible; the checker's scope gate and the armed
+# watcher's X-mode poll both need the user's real PATH, so it is stamped in.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,13 +56,22 @@ LABEL="com.firstmate.watcher-watchdog.$(home_slug)"
 PLIST="$LAUNCH_AGENTS/$LABEL.plist"
 DOMAIN="gui/$(id -u)"
 
+# Escape a value for the replacement side of sed -e "s|@@X@@|VALUE|g": backslash,
+# ampersand, and the | delimiter are all special there.
+sed_escape() {
+  printf '%s' "$1" | sed -e 's/[\\&|]/\\&/g'
+}
+
+AGENT_PATH="${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}"
+
 stamp_plist() {
   mkdir -p "$LAUNCH_AGENTS" || die "cannot create $LAUNCH_AGENTS"
   local tmp
   tmp="$PLIST.tmp.$$"
-  sed -e "s|@@LABEL@@|$LABEL|g" \
-      -e "s|@@CHECKER@@|$CHECKER|g" \
-      -e "s|@@FM_HOME@@|$FM_HOME_ABS|g" \
+  sed -e "s|@@LABEL@@|$(sed_escape "$LABEL")|g" \
+      -e "s|@@CHECKER@@|$(sed_escape "$CHECKER")|g" \
+      -e "s|@@FM_HOME@@|$(sed_escape "$FM_HOME_ABS")|g" \
+      -e "s|@@PATH@@|$(sed_escape "$AGENT_PATH")|g" \
       "$TEMPLATE" > "$tmp" 2>/dev/null || { rm -f "$tmp"; die "failed to stamp plist"; }
   mv -f "$tmp" "$PLIST" || { rm -f "$tmp"; die "failed to write $PLIST"; }
 }

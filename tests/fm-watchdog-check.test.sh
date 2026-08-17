@@ -38,6 +38,7 @@ install_watchdog_scripts() {
   cp "$ROOT/bin/fm-supervision-lib.sh" "$dir/bin/fm-supervision-lib.sh"
   cp "$ROOT/bin/fm-wake-lib.sh" "$dir/bin/fm-wake-lib.sh"
   cp "$ROOT/bin/fm-session-lock-lib.sh" "$dir/bin/fm-session-lock-lib.sh"
+  cp "$ROOT/bin/fm-cursor-lib.sh" "$dir/bin/fm-cursor-lib.sh"
   chmod +x "$dir/bin/fm-watchdog-check.sh"
 }
 
@@ -294,15 +295,19 @@ test_plist_template_matches_checker_contract() {
   assert_grep '@@LABEL@@' "$PLIST_TEMPLATE" "template must carry a stamped Label placeholder"
   assert_grep '@@CHECKER@@' "$PLIST_TEMPLATE" "template must carry a stamped checker path placeholder"
   assert_grep '@@FM_HOME@@' "$PLIST_TEMPLATE" "template must carry a stamped FM_HOME placeholder"
+  assert_grep '@@PATH@@' "$PLIST_TEMPLATE" "template must carry a stamped PATH placeholder"
   assert_grep '<key>RunAtLoad</key>' "$PLIST_TEMPLATE" "agent must run at load (boot/login)"
   assert_grep '<true/>' "$PLIST_TEMPLATE" "RunAtLoad must be true"
   assert_grep '<key>StartInterval</key>' "$PLIST_TEMPLATE" "agent must define a timer interval"
   assert_grep '<integer>90</integer>' "$PLIST_TEMPLATE" "agent interval must be the short ~90s watchdog cadence"
   assert_grep '<key>FM_HOME</key>' "$PLIST_TEMPLATE" "agent must pass FM_HOME to the checker"
+  assert_grep '<key>PATH</key>' "$PLIST_TEMPLATE" \
+    "agent must carry a full PATH; launchd's minimal one hides Homebrew jq/git"
   # The template invokes the checker via the @@CHECKER@@ placeholder; the
   # installer owns binding that placeholder to bin/fm-watchdog-check.sh.
   assert_grep 'fm-watchdog-check.sh' "$INSTALLER" "installer must stamp the real checker path"
-  pass "plist template: stamped placeholders, RunAtLoad, 90s StartInterval, FM_HOME, checker"
+  assert_grep '@@PATH@@' "$INSTALLER" "installer must stamp the user PATH into the agent"
+  pass "plist template: stamped placeholders, RunAtLoad, 90s StartInterval, FM_HOME+PATH, checker"
 }
 
 test_settings_and_lint_wire_watchdog_into_repo() {
