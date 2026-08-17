@@ -23,7 +23,27 @@ set -u
 
 TMP_ROOT=$(fm_test_tmproot fm-startup-network-tests)
 FM_TEST_CLEANUP_DIRS+=("$TMP_ROOT")
-trap fm_test_cleanup EXIT
+
+# Scenarios that pin single-flight, lease hand-off, and stale-lock refusals
+# deliberately leave `run` workers alive when their assertion is made; on Linux
+# those workers are orphaned to init and keep polling after this file exits, and
+# their concurrent sleep loops blow the sub-second deadlines of timing-sensitive
+# suites scheduled later in the same CI shard (observed: five orphaned workers
+# after this suite made tests/fm-pi-watch-extension.test.sh fail deterministically).
+# Reap every process still referencing this run's unique TMP_ROOT before
+# the shared cleanup removes the directories.
+fm_startup_network_reap_workers() {
+  local pat
+  [ -n "${TMP_ROOT:-}" ] || return 0
+  # mktemp under a trailing-slash TMPDIR (macOS) leaves a // in TMP_ROOT that
+  # the workers' own argv never contains, so collapse it before matching.
+  pat=${TMP_ROOT//\/\//\/}
+  pkill -TERM -f "$pat" 2>/dev/null || true
+  sleep 0.3
+  pkill -KILL -f "$pat" 2>/dev/null || true
+}
+
+trap 'fm_startup_network_reap_workers; fm_test_cleanup' EXIT
 
 # new_world <name>: an FM_HOME plus a fake code root whose bin/ is a real
 # firstmate bin/ except for fm-bootstrap.sh, which is replaced by a scriptable
